@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF Uploader</title>
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    body{
+      background:#f4f4f4;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+    }
+
+    .container{
+      width:500px;
+      background:white;
+      padding:30px;
+      border-radius:12px;
+      box-shadow:0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1{
+      text-align:center;
+      margin-bottom:20px;
+    }
+
+    input{
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border:1px solid #ccc;
+      border-radius:8px;
+    }
+
+    button{
+      width:100%;
+      padding:12px;
+      margin-top:15px;
+      border:none;
+      background:black;
+      color:white;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:16px;
+      transition:0.3s;
+    }
+
+    button:hover{
+      opacity:0.9;
+    }
+
+    button:disabled{
+      background:gray;
+      cursor:not-allowed;
+    }
+
+    .success{
+      background:green !important;
+    }
+
+    .response-box{
+      margin-top:20px;
+      padding:15px;
+      background:#f1f1f1;
+      border-radius:8px;
+      min-height:80px;
+      line-height:1.5;
+    }
+
+    .hidden{
+      display:none;
+    }
+
+    .loader{
+      width:20px;
+      height:20px;
+      border:3px solid #ddd;
+      border-top:3px solid black;
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+      margin:auto;
+      margin-top:10px;
+    }
+
+    @keyframes spin{
+      100%{
+        transform:rotate(360deg);
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <h1>PDF Uploader</h1>
+
+    <!-- Upload Section -->
+    <input type="file" id="pdfFile">
+
+    <button id="uploadBtn" onclick="uploadPDF()">
+      Upload PDF
+    </button>
+
+    <!-- Question Section -->
+    <div id="questionSection" class="hidden">
+
+      <input 
+        type="text" 
+        id="questionInput"
+        placeholder="Ask Question..."
+      >
+
+      <button id="questionBtn" onclick="askQuestion()">
+        Ask Question
+      </button>
+
+    </div>
+
+    <!-- Loader -->
+    <div id="loader" class="hidden">
+      <div class="loader"></div>
+    </div>
+
+    <!-- Response -->
+    <div class="response-box" id="responseBox">
+      Response will appear here...
+    </div>
+
+  </div>
+
+  <script>
+
+    // Upload PDF
+    async function uploadPDF(){
+
+      const uploadBtn = document.getElementById("uploadBtn");
+
+      const loader = document.getElementById("loader");
+
+      const fileInput = document.getElementById("pdfFile");
+
+      const file = fileInput.files[0];
+
+      if(!file){
+        alert("Please select PDF file");
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      uploadBtn.innerText = "Uploading...";
+      loader.classList.remove("hidden");
+
+      const formData = new FormData();
+
+      formData.append("file", file);
+
+      try{
+
+        const response = await fetch("http://127.0.0.1:8000/upload",{
+          method:"POST",
+          body:formData
+        });
+
+        const data = await response.json();
+
+        document.getElementById("responseBox").innerHTML =
+          data.message || "PDF Uploaded Successfully";
+
+        uploadBtn.innerText = "Uploaded Successfully";
+        uploadBtn.classList.add("success");
+
+        setTimeout(() => {
+
+          uploadBtn.disabled = false;
+
+          uploadBtn.innerText = "Upload PDF";
+
+          uploadBtn.classList.remove("success");
+
+        }, 2000);
+
+        // Show Question Section
+        document
+          .getElementById("questionSection")
+          .classList.remove("hidden");
+
+      }
+      catch(error){
+
+        console.log(error);
+
+        document.getElementById("responseBox").innerHTML =
+          "Upload Failed";
+
+        uploadBtn.disabled = false;
+        uploadBtn.innerText = "Upload PDF";
+
+      }
+      finally{
+        loader.classList.add("hidden");
+      }
+
+    }
+
+
+    // Ask Question
+    async function askQuestion(){
+
+      const questionBtn =
+        document.getElementById("questionBtn");
+
+      const loader = document.getElementById("loader");
+
+      const question =
+        document.getElementById("questionInput").value;
+
+      if(!question){
+        alert("Please enter question");
+        return;
+      }
+
+      questionBtn.disabled = true;
+      questionBtn.innerText = "Answer Generated";
+      questionBtn.classList.add("success");
+
+      setTimeout(() => {
+
+        questionBtn.disabled = false;
+
+        questionBtn.innerText = "Ask Question";
+
+        questionBtn.classList.remove("success");
+
+}, 2000);
+
+      try{
+
+        const response = await fetch("http://127.0.0.1:8000/question",{
+
+          method:"POST",
+
+          headers:{
+            "Content-Type":"application/json"
+          },
+
+          body:JSON.stringify({
+            question:question
+          })
+
+        });
+
+        const data = await response.json();
+
+        document.getElementById("responseBox").innerHTML =
+          data.answer;
+
+        questionBtn.innerText = "Answer Generated";
+        questionBtn.classList.add("success");
+
+      }
+      catch(error){
+
+        console.log(error);
+
+        document.getElementById("responseBox").innerHTML =
+          "Question Request Failed";
+
+        questionBtn.disabled = false;
+        questionBtn.innerText = "Ask Question";
+
+      }
+      finally{
+        loader.classList.add("hidden");
+      }
+
+    }
+
+  </script>
+
+</body>
+</html>
